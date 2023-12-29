@@ -132,7 +132,63 @@ private:
 public:
   int counter = 0;
 
-  
+  void init() {
+    ifstream t_shirtsFile("Product_Catalog");
+
+    if (!t_shirtsFile.is_open()) {
+      cout << "\nerror opening file!!" << endl;
+      return;
+    }
+
+    string T_Shirts;
+    while (getline(t_shirtsFile, T_Shirts)) {
+      istringstream iss(T_Shirts);
+      string name, color, size;
+      int quantity;
+      double price;
+
+      if (!(iss >> name >> color >> size >> quantity >> price) || iss.fail()) {
+        cout << "\nError reading values from the file!\n";
+        break;
+      }
+
+      // Create a t_shirt object with the extracted values
+      class T_shirt shirt(name, size, color, quantity, price);
+      t_shirts[name] = shirt;
+    }
+
+    ifstream orderFile("Purchase_Catalog");
+
+    if (!orderFile.is_open()) {
+      cout << "\nerror opening file!!" << endl;
+      return;
+    }
+
+    string Order;
+    while (getline(orderFile, Order)) {
+      istringstream iss(Order);
+      string name, phone, address, buyName, orderID;
+      string quantity;
+      string orderPrice;
+
+      // Check if all values are read successfully
+      if (!(getline(iss, orderID, '\t') && getline(iss, name, '\t') &&
+            getline(iss, phone, '\t') && getline(iss, quantity, '\t') &&
+            getline(iss, address, '\t') && getline(iss, buyName, '\t') &&
+            getline(iss, orderPrice)) ||
+          iss.fail()) {
+        cerr << "Error reading values from the file at line: " << Order << "\n";
+
+        break;
+      }
+
+      class Order orderObj(name, phone, stoi(quantity), address, buyName, 0.0,
+                           stod(orderPrice), orderID);
+
+      buy[orderID] = orderObj;
+      counter = counter + 1;
+    }
+  }
 
   void updateProduct() {
     clear();
@@ -206,12 +262,74 @@ public:
     }
   }
 
-  
+  void seeAll_Products() {
+    clear();
+    for (auto i = t_shirts.begin(); i != t_shirts.end(); i++) {
+      cout << "\n";
+      T_shirt &data = t_shirts[i->first];
+      cout << "name: " << data.getName() << endl;
+      cout << "color: " << data.getColor() << endl;
+      cout << "size: " << data.getSize() << endl;
+      cout << "quantity left: " << data.getQuantity() << endl;
+      cout << "price: " << data.getPrice() << endl;
+    }
+  }
+
+  void seeAll_Orders() {
+    clear();
+    for (auto i = buy.begin(); i != buy.end(); i++) {
+      cout << "\n";
+      Order &data = buy[i->first];
+      cout << "order id: " << i->first << endl;
+      cout << "user name: " << data.getBuyName() << endl;
+      cout << "user phone: " << data.getPhone() << endl;
+      cout << "user adress: " << data.getAddress() << endl;
+      cout << "product bought: " << data.getName() << endl;
+      cout << "order quantity: " << data.getBuyQuantity() << endl;
+      cout << "price paid: " << data.getTotalPrice() << endl;
+    }
+  }
+
+
+  void saveProduct() {
+    ofstream outputFile("Product_Catalog", std::ios::out | std::ios::trunc);
+
+    if (!outputFile.is_open()) {
+      cout << "\nerror opening file\n";
+      return;
+    }
+
+    for (const auto &re : t_shirts) {
+      outputFile << re.second.getName() << "\t" << re.second.getColor() << "\t"
+                 << re.second.getSize() << "\t" << re.second.getQuantity()
+                 << "\t" << re.second.getPrice() << "\n";
+    }
+
+    outputFile.close();
+  }
+
+  void saveOrder() {
+    ofstream outputFile("Purchase_Catalog", std::ios::out | std::ios::trunc);
+
+    if (!outputFile.is_open()) {
+      cout << "\nError opening file\n";
+      return;
+    }
+
+    for (const auto &re : buy) {
+      outputFile << re.second.getOrderID() << "\t" << re.second.getName()
+                 << "\t" << re.second.getPhone() << "\t"
+                 << re.second.getBuyQuantity() << "\t" << re.second.getAddress()
+                 << "\t" << re.second.getBuyName() << "\t"
+                 << re.second.getTotalPrice() << "\n";
+    }
+  }
 };
 
 int main() {
 
   Store s;
+  s.init();
 
   cout << "Welcome to T-shirt shop!\n";
   cout << "\nenter username: ";
@@ -229,7 +347,9 @@ int main() {
       cout << "1. add product" << endl;
       cout << "2. update product" << endl;
       cout << "3. remove product" << endl;
-      cout << "4. exit" << endl;
+      cout << "4. see all products" << endl;
+      cout << "5. see all orders" << endl;
+      cout << "6. save and exit" << endl << endl;
       cin >> choice;
 
       switch (choice) {
@@ -256,6 +376,7 @@ int main() {
         break;
       }
 
+
       case 2: {
         clear();
         s.updateProduct();
@@ -271,9 +392,29 @@ int main() {
       }
 
 
+      case 4: {
+        clear();
+        s.seeAll_Products();
+        pressKey();
+        break;
       }
 
-    } while (choice != 4);
+      case 5: {
+        clear();
+        s.seeAll_Orders();
+        pressKey();
+        break;
+      }
+
+
+      case 6: {
+        clear();
+        s.saveOrder();
+        s.saveProduct();
+      }
+      }
+
+    } while (choice != 6);
 
   }
 
